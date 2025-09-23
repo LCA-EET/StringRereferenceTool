@@ -24,7 +24,7 @@ public class Main {
         _newTLK = new Hashtable<>();
         ProcessTLKFile(_oldDialogFile, _oldTLK);
         ProcessTLKFile(_newDialogFile, _newTLK);
-        System.out.println(_oldTLK.size());
+        BuildComparisonTable();
     }
     private static boolean ProcessParamFile(String pathToFile){
         File paramFile = new File(pathToFile);
@@ -68,7 +68,6 @@ public class Main {
     private static void FetchParams(){
         _oldDialogFile = GetFile("Provide the absolute path to the OLD dialog.tlk file for your EE install: ");
         _newDialogFile = GetFile("Provide the absolute path to the NEW dialog.tlk file for your EE install: ");
-        BuildComparisonTable();
     }
 
     private static void BuildComparisonTable(){
