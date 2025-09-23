@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="ReferenceBuilder">
+    <output-path>$PROJECT_DIR$/out/artifacts/ReferenceBuilder</output-path>
+    <root id="archive" name="ReferenceBuilder.jar">
+      <element id="module-output" name="TRARereferencer" />
+    </root>
+  </artifact>
+</component>
