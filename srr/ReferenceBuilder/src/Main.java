@@ -9,6 +9,7 @@ public class Main {
     private static File _oldDialogFile;
     private static File _newDialogFile;
     private static File _saveGameFile;
+    private static File _saveGameCopy;
     private static Hashtable<Integer, String> _oldTLK;
     private static Hashtable<Integer, String> _newTLK;
     private static Hashtable<Integer, Integer> _comparisonTable;
@@ -27,7 +28,12 @@ public class Main {
         ProcessTLKFile(_oldDialogFile, _oldTLK);
         ProcessTLKFile(_newDialogFile, _newTLK);
         BuildComparisonTable();
-        UpdateSaveFile();
+        if(UpdateSaveFile()){
+            System.out.println("Save file processed successfully.");
+        }
+        else{
+            System.out.println("An error occurred during processing. The save file has been restored from the backup.");
+        }
     }
     private static boolean ProcessParamFile(String pathToFile){
         File paramFile = new File(pathToFile);
@@ -74,7 +80,7 @@ public class Main {
     private static void FetchParams(){
         _oldDialogFile = GetFile("Provide the absolute path to the OLD dialog.tlk file for your EE install: ");
         _newDialogFile = GetFile("Provide the absolute path to the NEW dialog.tlk file for your EE install: ");
-        _saveGameFile = GetFile("Provide the path to the SAV file to update: ");
+        _saveGameFile = GetFile("Provide the path to the BALDUR.gam file to update: ");
     }
 
     private static void BuildComparisonTable(){
@@ -119,25 +125,33 @@ public class Main {
 
     }
 
-    private static void UpdateSaveFile()
+    private static boolean UpdateSaveFile()
     {
         ByteUtils.init();
-        File copyFile = new File(_saveGameFile.toPath() + ".bak");
+        _saveGameCopy = new File(_saveGameFile.toPath() + ".bak");
+        int append = 0;
+        while(Files.exists(_saveGameCopy.toPath())){
+            _saveGameCopy = new File(_saveGameFile.toPath() + ".bak" + append);
+            append++;
+        }
         try{
-            Files.copy(_saveGameFile.toPath(), copyFile.toPath());
-            System.out.println("Backup file saved to " + copyFile.toPath());
+            Files.copy(_saveGameFile.toPath(), _saveGameCopy.toPath());
+            System.out.println("Backup file saved to " + _saveGameCopy.toPath());
             _saveFileContents = Files.readAllBytes(_saveGameFile.toPath());
             ProcessCharacters(0x20); // Party Members
             ProcessCharacters(0x30); // NPCs
             Files.write(_saveGameFile.toPath(), _saveFileContents);
+            return true;
         }
         catch(Exception ex){
-            System.err.println(ex.getMessage());
+            System.err.println(ex +": " + ex.getMessage());
         }
+        return false;
     }
     private static void ProcessCharacters(int offset){
         int charactersOffset = ByteUtils.ExtractInt(_saveFileContents, offset);
         int numCharacters = ByteUtils.ExtractInt(_saveFileContents, offset + 0x4);
+        System.out.println(charactersOffset + ", " + numCharacters);
         for(int i = 0; i < numCharacters; i++){
             int charOffset = charactersOffset + (i * 0x160);
             UpdateReference(charOffset + 0xE4); // Strongest Foe Reference
