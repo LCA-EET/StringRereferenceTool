@@ -61,7 +61,7 @@ public class Main {
                 System.err.println(e.getMessage());
             }
         }
-        System.err.println("Invalid params file.");
+        System.err.println("Invalid parameters in params file.");
         return false;
     }
     private static File GetFile(String prompt){
