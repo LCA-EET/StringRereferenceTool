@@ -1,7 +1,6 @@
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.Scanner;
@@ -9,6 +8,7 @@ import java.util.Scanner;
 public class Main {
     private static File _oldDialogFile;
     private static File _newDialogFile;
+    private static File _saveGameFile;
     private static Hashtable<Integer, String> _oldTLK;
     private static Hashtable<Integer, String> _newTLK;
     private static Hashtable<Integer, Integer> _comparisonTable;
@@ -38,7 +38,10 @@ public class Main {
                 if(_oldDialogFile.exists()){
                     _newDialogFile = new File(fileScanner.nextLine());
                     if(_newDialogFile.exists()){
-                        return true;
+                        _saveGameFile = new File(fileScanner.nextLine());
+                        if(_saveGameFile.exists()){
+                            return true;
+                        }
                     }
                 }
             }
@@ -71,6 +74,7 @@ public class Main {
     private static void FetchParams(){
         _oldDialogFile = GetFile("Provide the absolute path to the OLD dialog.tlk file for your EE install: ");
         _newDialogFile = GetFile("Provide the absolute path to the NEW dialog.tlk file for your EE install: ");
+        _saveGameFile = GetFile("Provide the path to the SAV file to update: ");
     }
 
     private static void BuildComparisonTable(){
@@ -92,8 +96,8 @@ public class Main {
             System.out.println("Processing tlk file: " + tlk.toPath());
             String fileText = Files.readString(tlk.toPath(), StandardCharsets.UTF_16LE);
             String[] splitText = fileText.split("= ~");
-            int referenceID = 0;
-            String traText = "";
+            int referenceID;
+            String traText;
             for(int i = 1; i < splitText.length; i++){
                 String prior = splitText[i-1];
                 String current = splitText[i];
@@ -114,6 +118,23 @@ public class Main {
         }
 
     }
+
+    private static void UpdateSaveFile()
+    {
+        ByteUtils.init();
+        File copyFile = new File(_saveGameFile.toPath() + ".bak");
+        try{
+            Files.copy(_saveGameFile.toPath(), copyFile.toPath());
+            System.out.println("Backup file saved to " + copyFile.toPath());
+            _saveFileContents = Files.readAllBytes(_saveGameFile.toPath());
+            ProcessCharacters(0x20); // Party Members
+            ProcessCharacters(0x30); // NPCs
+            Files.write(_saveGameFile.toPath(), _saveFileContents);
+        }
+        catch(Exception ex){
+            System.err.println(ex.getMessage());
+        }
+    }
     private static void ProcessCharacters(int offset){
         int charactersOffset = ByteUtils.ExtractInt(_saveFileContents, offset);
         int numCharacters = ByteUtils.ExtractInt(_saveFileContents, offset + 0x4);
@@ -132,23 +153,6 @@ public class Main {
         for(int s = 0; s < 100; s++){
             UpdateReference(soundOffset); // Update sounds
             soundOffset += 0x4;
-        }
-    }
-    private static void UpdateSaveFile()
-    {
-        ByteUtils.init();
-        File saveFile = GetFile("Provide the path to the SAV file to update: ");
-        File copyFile = new File(saveFile.toPath() + ".bak");
-        try{
-            Files.copy(saveFile.toPath(), copyFile.toPath());
-            System.out.println("Backup file saved to " + copyFile.toPath());
-            _saveFileContents = Files.readAllBytes(saveFile.toPath());
-            ProcessCharacters(0x20); // Party Members
-            ProcessCharacters(0x30); // NPCs
-            Files.write(saveFile.toPath(), _saveFileContents);
-        }
-        catch(Exception ex){
-            System.err.println(ex.getMessage());
         }
     }
     private static int GetNewReference(int oldReference){
