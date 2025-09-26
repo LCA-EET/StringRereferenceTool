@@ -1,0 +1,8 @@
+[absolute path to old dialog.tlk]
+[absolute path to new dialog.tlk]
+[absolute path to the .GAM file associated with the save game that you want to modify]
+
+Example
+F:\Baldur's Gate EE\00783\old.tlk
+F:\Baldur's Gate EE\00783\new.tlk
+C:\Documents\Baldur's Gate II - Enhanced Edition\save\000000162-RRTest\BALDUR.GAM
