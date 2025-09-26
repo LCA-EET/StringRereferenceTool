@@ -32,7 +32,13 @@ public class Main {
             System.out.println("Save file processed successfully.");
         }
         else{
-            System.out.println("An error occurred during processing. The save file has been restored from the backup.");
+            try{
+                Files.copy(_saveGameCopy.toPath(), _saveGameFile.toPath());
+                System.out.println("An error occurred during processing. The save file has been restored from the backup.");
+            }
+            catch(Exception ex){
+                System.out.println("An error occurred during processing. The save file could not be restored from the backup.");
+            }
         }
     }
     private static boolean ProcessParamFile(String pathToFile){
