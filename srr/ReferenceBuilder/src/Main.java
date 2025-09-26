@@ -1,6 +1,7 @@
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.Scanner;
@@ -11,6 +12,7 @@ public class Main {
     private static Hashtable<Integer, String> _oldTLK;
     private static Hashtable<Integer, String> _newTLK;
     private static Hashtable<Integer, Integer> _comparisonTable;
+    private static byte[] _saveFileContents;
 
     public static void main(String[] args){
         boolean processCommandLine = true;
@@ -25,6 +27,7 @@ public class Main {
         ProcessTLKFile(_oldDialogFile, _oldTLK);
         ProcessTLKFile(_newDialogFile, _newTLK);
         BuildComparisonTable();
+        UpdateSaveFile();
     }
     private static boolean ProcessParamFile(String pathToFile){
         File paramFile = new File(pathToFile);
@@ -111,5 +114,54 @@ public class Main {
         }
 
     }
+    private static void ProcessPartyMembers(){
+        int partyMemberOffset = ByteUtils.ExtractInt(_saveFileContents, 0x20);
+        int numPartyMembers = ByteUtils.ExtractInt(_saveFileContents, 0x24);
+        for(int i = 0; i < numPartyMembers; i++){
+            int offset = partyMemberOffset + (i * 0x160);
+            // Member Structure
+            UpdateReference(offset + 0xE4); // Strongest Foe Reference
 
+            // CRE Structure
+            int creOffset = ByteUtils.ExtractInt(_saveFileContents, offset + 0x4);
+            if(i != 0){ // skip the main character as these references are not applicable
+                UpdateReference(creOffset + 0x8); // Name Reference
+                UpdateReference(creOffset + 0xC); // Tooltip Reference
+            }
+
+            // CRE.Sounds
+            int soundOffset = creOffset + 0xA4;
+            for(int s = 0; s < 100; s++){
+                UpdateReference(soundOffset); // Update sounds
+                soundOffset += 0x4;
+            }
+        }
+    }
+    private static void UpdateSaveFile()
+    {
+        ByteUtils.init();
+        File saveFile = GetFile("Provide the path to the SAV file to update: ");
+        File copyFile = new File(saveFile.toPath() + ".bak");
+        try{
+            Files.copy(saveFile.toPath(), copyFile.toPath());
+            System.out.println("Backup file saved to " + copyFile.toPath());
+            _saveFileContents = Files.readAllBytes(saveFile.toPath());
+            ProcessPartyMembers();
+            Files.write(saveFile.toPath(), _saveFileContents);
+        }
+        catch(Exception ex){
+            System.err.println(ex.getMessage());
+        }
+    }
+    private static int GetNewReference(int oldReference){
+        return _comparisonTable.getOrDefault(oldReference, oldReference);
+    }
+    private static void UpdateReference(int offset){
+        int oldReference = ByteUtils.ExtractInt(_saveFileContents, offset);
+        WriteIntToFileContents(GetNewReference(oldReference), offset);
+    }
+    private static void WriteIntToFileContents(int value, int offset){
+        byte[] intBytes = ByteUtils.IntToByteArray(value);
+        System.arraycopy(intBytes, 0, _saveFileContents, offset, 4);
+    }
 }
